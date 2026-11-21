@@ -1,0 +1,938 @@
+<meta name="dash-one-writer">
+<style>
+/* Layout: one long scroll, summary first (decision → why → history), cards only for tiles and charts. */
+.sp { display: grid; gap: var(--cds-gap-xl); color: var(--color-fg); font-family: var(--font-anthropic-sans); }
+.sp p { margin: 0; }
+.sp-eyebrow { font-size: var(--cds-font-size-caption); letter-spacing: .06em; color: var(--color-fg-muted); }
+.sp-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; text-wrap: balance; }
+.sp-sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.sp-lede { font-size: var(--cds-font-size-heading); line-height: 1.55; max-width: 72ch; text-wrap: pretty; }
+.sp-head { display: grid; gap: var(--cds-gap-sm); }
+.sp-nav { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs); padding-top: var(--cds-gap-xs); }
+.sp-nav a { font-size: var(--cds-font-size-caption); color: var(--color-fg); text-decoration: none; padding: 3px 10px; border: 1px solid var(--color-border-line); border-radius: 999px; }
+.sp-nav a:hover, .sp-nav a:focus-visible { border-color: var(--color-fg-muted); outline: none; }
+.sp-section { display: grid; gap: var(--cds-gap-md); scroll-margin-top: 12px; }
+.sp-section > h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; text-wrap: balance; }
+.sp-section h3 { font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); margin: 0; }
+.sp-note { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.6; max-width: 80ch; }
+.sp-prose { line-height: 1.75; max-width: 76ch; }
+.sp-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; display: grid; gap: var(--cds-gap-sm); align-content: start; }
+.sp-grid { display: grid; gap: var(--cds-gap-md); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.sp-grid-2 { display: grid; gap: var(--cds-gap-md); grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.sp-grid-2 > * { min-width: 0; }
+.sp-label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); letter-spacing: .02em; }
+.sp-big { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 2.6rem; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.sp-mid { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.sp-small { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.5; }
+.sp-num { font-variant-numeric: tabular-nums; }
+.sp-stance { display: grid; gap: var(--cds-gap-sm); }
+.sp-pill { justify-self: start; font-size: 1.35rem; font-weight: var(--cds-font-weight-medium); padding: 4px 14px; border-radius: 999px; border: 1px solid currentColor; }
+.sp-pill.ok { color: var(--color-ok); } .sp-pill.warn { color: var(--color-warn); } .sp-pill.neutral { color: var(--color-fg); }
+.sp-verdict { font-size: var(--cds-font-size-caption); padding: 1px 8px; border-radius: 999px; border: 1px solid var(--color-border-line); }
+.sp-verdict.ok { color: var(--color-ok); border-color: var(--color-ok); }
+.sp-verdict.warn { color: var(--color-warn); border-color: var(--color-warn); }
+.sp-verdict.bad { color: var(--color-fg-muted); }
+.sp-stats { display: grid; gap: var(--cds-gap-sm) var(--cds-gap-lg); grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); }
+.sp-stat { display: grid; gap: 2px; }
+.sp-stat b { font-weight: 500; font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.pos { color: var(--color-ok); } .neg { color: var(--color-bad); } .warn { color: var(--color-warn); } .muted { color: var(--color-fg-muted); }
+.sp-wrap { overflow-x: auto; min-width: 0; }
+.sp-scroll { max-height: 460px; overflow: auto; }
+table.sp-t { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+.sp-t th { font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; position: sticky; top: 0; background: var(--color-bg); }
+.sp-t td { text-align: right; padding: 7px 8px; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; vertical-align: top; }
+.sp-t th.l, .sp-t td.l { text-align: left; }
+.sp-t td.w { white-space: normal; min-width: 13em; max-width: 34em; text-align: left; line-height: 1.5; }
+.sp-t tr.first td { border-top: 1px solid var(--color-fg-muted); }
+.sp-cellbar { display: inline-grid; grid-template-columns: 56px auto; gap: 6px; align-items: center; }
+.sp-track { position: relative; height: 6px; border-radius: 3px; background: var(--cds-chart-grid); overflow: hidden; }
+.sp-fill { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 3px; }
+.sp-chart { position: relative; min-height: 240px; }
+.sp-chart.short { min-height: 140px; }
+.sp-chart svg { display: block; overflow: visible; }
+.sp-chart text, .sp-axis text { fill: var(--cds-text-secondary); font-size: 11px; font-family: var(--font-anthropic-sans); }
+.sp-tip { position: absolute; z-index: 5; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: 6px; padding: 6px 9px; font-size: 12px; line-height: 1.5; white-space: nowrap; color: var(--color-fg); }
+.sp-tip b { font-weight: 500; }
+.sp-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.sp-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sp-sw { width: 14px; height: 3px; border-radius: 2px; display: inline-block; background: var(--color-fg-muted); }
+.sp-sw.box { height: 10px; opacity: .35; }
+.sp-hbars { display: grid; gap: 6px; }
+.sp-hrow { display: grid; grid-template-columns: minmax(84px, 9em) 1fr auto; gap: 10px; align-items: center; font-size: var(--cds-font-size-caption); }
+.sp-hrow .sp-track { height: 12px; overflow: visible; background: transparent; }
+.sp-hrow .sp-track::before { content: ""; position: absolute; left: 0; right: 0; top: 5px; height: 2px; background: var(--cds-chart-grid); }
+.sp-hrow .sp-fill { border-radius: 2px; }
+.sp-zero { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--cds-chart-axis); }
+.sp-hrow .v { font-variant-numeric: tabular-nums; min-width: 4.5em; text-align: right; }
+.sp-range { display: grid; gap: 14px; }
+.sp-rrow { display: grid; grid-template-columns: 4em 1fr; gap: 10px; align-items: center; font-size: var(--cds-font-size-caption); }
+.sp-rtrack { position: relative; height: 22px; }
+.sp-rtrack .p1090 { position: absolute; top: 10px; height: 2px; background: var(--cds-chart-muted); }
+.sp-rtrack .p2575 { position: absolute; top: 5px; height: 12px; border-radius: 3px; opacity: .55; }
+.sp-rtrack .med { position: absolute; top: 1px; height: 20px; width: 2px; background: var(--color-fg); }
+.sp-rcap { grid-column: 2; color: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
+.sp-news { display: grid; gap: var(--cds-gap-md); list-style: none; padding: 0; margin: 0; }
+.sp-news li { display: grid; gap: 6px; padding-bottom: var(--cds-gap-md); border-bottom: 1px solid var(--color-border-line); }
+.sp-news .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.sp-chip { font-size: var(--cds-font-size-caption); padding: 0 8px; border-radius: 999px; border: 1px solid currentColor; }
+.sp-news .t { font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-body); line-height: 1.5; }
+.sp-news .d { line-height: 1.65; }
+.sp-news .k { line-height: 1.65; padding-left: 10px; border-left: 2px solid var(--cds-chart-muted); color: var(--color-fg); }
+.sp-news a { color: inherit; }
+details.sp-more { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.7; }
+details.sp-more summary { cursor: pointer; color: var(--color-fg); }
+details.sp-more ul { margin: 6px 0 0; padding-left: 1.2em; }
+.sp-foot { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.7; border-top: 1px solid var(--color-border-line); padding-top: var(--cds-gap-md); display: grid; gap: 6px; }
+@media (max-width: 520px) { .sp-big { font-size: 2.1rem; } .sp-hrow { grid-template-columns: 6.5em 1fr auto; } }
+</style>
+
+<div class="sp">
+
+<header class="sp-head" id="top">
+  <p class="sp-eyebrow">S&amp;P 500 · 每个美股交易日收盘后更新 · 面向长期持有</p>
+  <h1 class="sp-title">标普500 每日决策看板</h1>
+  <p class="sp-sub">数据截至 <span data-draw="v" data-source="signal" data-field="date" data-row="0">—</span> 美股收盘 · 新闻整理于 <span data-draw="v" data-source="brief" data-field="date" data-row="0">—</span> · 计算于 <span data-draw="v" data-source="signal" data-field="generated_at" data-row="0">—</span></p>
+  <p class="sp-lede" data-draw="v" data-source="brief" data-field="headline" data-row="0">—</p>
+  <nav class="sp-nav" aria-label="页面目录">
+    <a href="#decision">今日结论</a><a href="#trend">趋势</a><a href="#analogs">相似历史</a><a href="#factors">因子</a><a href="#markets">跨市场</a><a href="#news">今日新闻</a><a href="#drivers">下跌原因</a><a href="#calendar">未来事件</a><a href="#history">长周期历史</a><a href="#model">模型可信度</a>
+  </nav>
+</header>
+
+<section class="sp-section" id="decision">
+  <h2>今日结论</h2>
+  <div class="sp-card sp-stance" id="stance-card">
+    <span class="sp-label">对长期持有者的操作倾向</span>
+    <span class="sp-pill neutral" data-draw="stance" data-source="signal" data-field="stance" data-row="0">—</span>
+    <p class="sp-prose" data-draw="v" data-source="signal" data-field="stance_why" data-row="0">—</p>
+    <p class="sp-prose" data-draw="v" data-source="signal" data-field="stance_plan" data-row="0">—</p>
+  </div>
+
+  <div class="sp-grid" id="prob-tiles">
+    <div class="sp-card" id="tile-add">
+      <span class="sp-label">追加概率</span>
+      <span class="sp-big" data-draw="v" data-fmt="pct" data-source="signal" data-field="p_add" data-row="0">—</span>
+      <span class="sp-small">12个月后涨幅≥10%的概率。历史平均 <span data-draw="v" data-fmt="pct" data-source="signal" data-field="base_add" data-row="0">—</span>，前一交易日 <span data-draw="v" data-fmt="pct" data-source="signal" data-field="p_add_prev" data-row="0">—</span></span>
+      <span class="sp-small">模型可信度 <span class="sp-verdict" data-draw="verdict" data-source="model_card" data-field="verdict" data-where="key=add">—</span> 样本外AUC <span data-draw="v" data-fmt="num2" data-source="model_card" data-field="auc" data-where="key=add">—</span></span>
+    </div>
+    <div class="sp-card" id="tile-up12">
+      <span class="sp-label">12个月上涨概率</span>
+      <span class="sp-big" data-draw="v" data-fmt="pct" data-source="signal" data-field="p_up12" data-row="0">—</span>
+      <span class="sp-small">12个月后高于今日收盘的概率。历史平均 <span data-draw="v" data-fmt="pct" data-source="signal" data-field="base_up12" data-row="0">—</span>，前一交易日 <span data-draw="v" data-fmt="pct" data-source="signal" data-field="p_up12_prev" data-row="0">—</span></span>
+      <span class="sp-small">模型可信度 <span class="sp-verdict" data-draw="verdict" data-source="model_card" data-field="verdict" data-where="key=up12">—</span> 样本外AUC <span data-draw="v" data-fmt="num2" data-source="model_card" data-field="auc" data-where="key=up12">—</span></span>
+    </div>
+    <div class="sp-card" id="tile-trim">
+      <span class="sp-label">减持概率</span>
+      <span class="sp-big" data-draw="v" data-fmt="pct" data-source="signal" data-field="p_trim" data-row="0">—</span>
+      <span class="sp-small">今天接近未来半年高点、且随后会跌8%以上的概率。历史平均 <span data-draw="v" data-fmt="pct" data-source="signal" data-field="base_trim" data-row="0">—</span>，前一交易日 <span data-draw="v" data-fmt="pct" data-source="signal" data-field="p_trim_prev" data-row="0">—</span></span>
+      <span class="sp-small">模型可信度 <span class="sp-verdict" data-draw="verdict" data-source="model_card" data-field="verdict" data-where="key=trim">—</span> 样本外AUC <span data-draw="v" data-fmt="num2" data-source="model_card" data-field="auc" data-where="key=trim">—</span></span>
+    </div>
+    <div class="sp-card" id="tile-risk">
+      <span class="sp-label">3个月内再跌≥10%风险</span>
+      <span class="sp-big" data-draw="v" data-fmt="pct" data-source="signal" data-field="p_risk" data-row="0">—</span>
+      <span class="sp-small">未来约3个月内最低收盘比今天低10%以上的概率。历史平均 <span data-draw="v" data-fmt="pct" data-source="signal" data-field="base_risk" data-row="0">—</span>，前一交易日 <span data-draw="v" data-fmt="pct" data-source="signal" data-field="p_risk_prev" data-row="0">—</span></span>
+      <span class="sp-small">模型可信度 <span class="sp-verdict" data-draw="verdict" data-source="model_card" data-field="verdict" data-where="key=risk">—</span> 样本外AUC <span data-draw="v" data-fmt="num2" data-source="model_card" data-field="auc" data-where="key=risk">—</span></span>
+    </div>
+  </div>
+
+  <div class="sp-card" id="snapshot">
+    <div class="sp-stats">
+      <span class="sp-stat"><span class="sp-label">标普500收盘</span><b data-draw="v" data-fmt="num2" data-source="signal" data-field="close" data-row="0">—</b></span>
+      <span class="sp-stat"><span class="sp-label">当日</span><b data-draw="v" data-fmt="spct" data-tone="sign" data-source="signal" data-field="chg_1d" data-row="0">—</b></span>
+      <span class="sp-stat"><span class="sp-label">近5个交易日</span><b data-draw="v" data-fmt="spct" data-tone="sign" data-source="signal" data-field="chg_1w" data-row="0">—</b></span>
+      <span class="sp-stat"><span class="sp-label">年初至今</span><b data-draw="v" data-fmt="spct" data-tone="sign" data-source="signal" data-field="chg_ytd" data-row="0">—</b></span>
+      <span class="sp-stat"><span class="sp-label">距历史高点</span><b data-draw="v" data-fmt="spct" data-tone="sign" data-source="signal" data-field="dd" data-row="0">—</b></span>
+      <span class="sp-stat"><span class="sp-label">历史高点</span><b data-draw="v" data-fmt="num2" data-source="signal" data-field="ath" data-row="0">—</b></span>
+      <span class="sp-stat"><span class="sp-label">连续下跌天数</span><b data-draw="v" data-fmt="num0" data-source="signal" data-field="streak_down" data-row="0">—</b></span>
+      <span class="sp-stat"><span class="sp-label">VIX</span><b data-draw="v" data-fmt="num2" data-source="signal" data-field="vix" data-row="0">—</b></span>
+      <span class="sp-stat"><span class="sp-label">RSI(14)</span><b data-draw="v" data-fmt="num1" data-source="signal" data-field="rsi14" data-row="0">—</b></span>
+      <span class="sp-stat"><span class="sp-label">席勒CAPE</span><b data-draw="v" data-fmt="num2" data-source="signal" data-field="cape" data-row="0">—</b></span>
+      <span class="sp-stat"><span class="sp-label">10年期美债(%)</span><b data-draw="v" data-fmt="num2" data-source="signal" data-field="y10" data-row="0">—</b></span>
+      <span class="sp-stat"><span class="sp-label">200日均线</span><b data-draw="v" data-fmt="num2" data-source="signal" data-field="ma200" data-row="0">—</b></span>
+    </div>
+  </div>
+
+  <div class="sp-grid-2">
+    <div class="sp-card" id="risk-sources">
+      <h3>短期风险从哪里来</h3>
+      <p class="sp-small">3个月风险模型中各状态变量对今天风险的推动(对数几率，正值=推高风险)。</p>
+      <div class="sp-hbars" data-draw="riskbars" data-source="risk_drivers"></div>
+    </div>
+    <div class="sp-card" id="how-to-use">
+      <h3>怎么用这些概率</h3>
+      <p class="sp-small">先和历史平均比，而不是只看绝对值。12个月方向的样本外预测力很弱，追加/上涨概率主要告诉你今天的状态在历史上算不算特殊；3个月风险模型的预测力较强，适合用来决定加仓节奏。</p>
+      <details class="sp-more">
+        <summary>操作倾向的判定规则</summary>
+        <ul>
+          <li>回撤≥10% 且 12个月上涨概率≥60%：分批加仓；若3个月风险≥历史平均的1.3倍，分4-6份逐步投入。</li>
+          <li>回撤在5%-10%：小幅加仓或按计划定投。</li>
+          <li>回撤小于3%、CAPE处于历史前10%、减持概率≥历史平均1.5倍：少量减持5%-10%。</li>
+          <li>其他情况：持有并正常定投。</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="sp-section" id="trend">
+  <h2>价格趋势与概率走势(近3年)</h2>
+  <div class="sp-card">
+    <div class="sp-legend"><span><i class="sp-sw" data-swatch="0"></i>标普500</span><span><i class="sp-sw" data-swatch="1"></i>50日均线</span><span><i class="sp-sw" data-swatch="2"></i>200日均线</span></div>
+    <div class="sp-chart" id="price-chart" data-draw="pricechart" data-source="price"></div>
+    <div class="sp-legend"><span><i class="sp-sw" data-swatch="0"></i>追加概率</span><span><i class="sp-sw" data-swatch="1"></i>12个月上涨概率</span><span><i class="sp-sw" data-swatch="2"></i>减持概率</span><span><i class="sp-sw" data-swatch="bad"></i>3个月再跌≥10%风险</span></div>
+    <div class="sp-chart short" id="prob-chart" data-draw="probchart" data-source="price"></div>
+    <p class="sp-note">概率线全部是滚动样本外预测：每年1月只用当时已经知道结果的历史重新拟合，再预测当年，没有用到未来信息。</p>
+  </div>
+</section>
+
+<section class="sp-section" id="analogs">
+  <h2>历史相似状态：之后发生了什么</h2>
+  <p class="sp-note">按回撤深度、波动率、偏离200日线、近1个月和12-1个月动量，在1930年以来的交易日中找出与今天最接近的1000天(覆盖 <span data-draw="v" data-fmt="num0" data-source="signal" data-field="analog_episodes" data-row="0">—</span> 个不同年份)，统计它们随后的涨跌。</p>
+  <div class="sp-grid-2">
+    <div class="sp-card" id="analog-range">
+      <h3>未来回报分布</h3>
+      <div class="sp-legend"><span><i class="sp-sw box" data-swatch="0"></i>中间50%</span><span><i class="sp-sw"></i>10%-90%</span><span><i class="sp-sw" style="background: var(--color-fg); width: 2px; height: 12px"></i>中位数</span></div>
+      <div class="sp-range" data-draw="range" data-source="analog_dist"></div>
+    </div>
+    <div class="sp-card" id="yearend">
+      <h3>到今年年底</h3>
+      <div class="sp-stats">
+        <span class="sp-stat"><span class="sp-label">年末高于今日</span><b data-draw="v" data-fmt="pct0" data-source="yearend" data-field="value" data-where="metric=年末高于今日收盘">—</b></span>
+        <span class="sp-stat"><span class="sp-label">年末较今日涨≥5%</span><b data-draw="v" data-fmt="pct0" data-source="yearend" data-field="value" data-where="metric=年末较今日涨≥5%25">—</b></span>
+        <span class="sp-stat"><span class="sp-label">年末较今日跌≥5%</span><b data-draw="v" data-fmt="pct0" data-source="yearend" data-field="value" data-where="metric=年末较今日跌≥5%25">—</b></span>
+        <span class="sp-stat"><span class="sp-label">年底前收复高点</span><b data-draw="v" data-fmt="pct0" data-source="yearend" data-field="value" data-where="metric=年底前收复历史高点">—</b></span>
+        <span class="sp-stat"><span class="sp-label">年末点位 10%分位</span><b data-draw="v" data-fmt="num0" data-source="yearend" data-field="value" data-where="metric=年末点位10%25分位">—</b></span>
+        <span class="sp-stat"><span class="sp-label">年末点位 中位数</span><b data-draw="v" data-fmt="num0" data-source="yearend" data-field="value" data-where="metric=年末点位中位数">—</b></span>
+        <span class="sp-stat"><span class="sp-label">年末点位 90%分位</span><b data-draw="v" data-fmt="num0" data-source="yearend" data-field="value" data-where="metric=年末点位90%25分位">—</b></span>
+        <span class="sp-stat"><span class="sp-label">剩余交易日</span><b data-draw="v" data-fmt="num0" data-source="yearend" data-field="value" data-where="metric=交易日剩余">—</b></span>
+      </div>
+    </div>
+  </div>
+  <div class="sp-card" id="analog-list">
+    <h3>最相似的20个历史时点(每段行情只取一天)</h3>
+    <div class="sp-wrap">
+      <table class="sp-t" data-source="analogs" data-row-key="date">
+        <thead><tr><th class="l" data-field="date">日期</th><th data-field="close">当时点位</th><th data-field="dd">距高点</th><th data-field="rv20">20日波动率</th><th data-field="ret1m">近1月</th><th data-field="fwd63">之后3个月</th><th data-field="fwd252">之后12个月</th><th data-field="fwdmin126">之后6个月最大跌幅</th></tr></thead>
+        <tbody data-draw="analogtable"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="sp-section" id="factors">
+  <h2>因子面板：每个因子在历史上意味着什么</h2>
+  <p class="sp-note">“同区间”指历史上该因子与今天落在同一个十分位区间的交易日。比较它们之后的结果与该因子全部历史的平均，可以看出单个因子偏向加仓还是谨慎。宏观与估值因子跨年代的方向并不稳定，所以只作参考，不进入概率模型。</p>
+  <div class="sp-wrap">
+    <table class="sp-t" data-source="factors" data-row-key="key">
+      <thead><tr><th class="l" data-field="factor">因子</th><th class="l" data-field="group">类别</th><th data-field="value">当前值</th><th data-field="percentile">历史分位</th><th data-field="p_add_bin">同区间:12个月涨≥10%</th><th data-field="p_add_base">该因子全样本</th><th data-field="p_risk_bin">同区间:3个月再跌≥10%</th><th data-field="p_risk_base">该因子全样本</th><th class="l" data-field="lean_12m">12个月倾向</th><th class="l" data-field="lean_3m">3个月风险</th><th data-field="since">数据起始</th><th class="l" data-field="note">解读</th></tr></thead>
+      <tbody data-draw="factortable"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="sp-section" id="markets">
+  <h2>跨市场联动</h2>
+  <p class="sp-note">相关系数基于日收益率(利率用收益率变动)。亚洲与欧洲市场在美股开盘前收盘，因此用它们“次日”的表现与美股当日对比，衡量隔夜传导。</p>
+  <div class="sp-wrap">
+    <table class="sp-t" data-source="markets" data-row-key="symbol">
+      <thead><tr><th class="l" data-field="name">品种</th><th class="l" data-field="group">类别</th><th data-field="last">最新</th><th data-field="chg_1d">1日</th><th data-field="chg_1w">1周</th><th data-field="chg_1m">1月</th><th data-field="chg_3m">3月</th><th data-field="chg_ytd">年初至今</th><th data-field="corr_60d">与标普相关(60日)</th><th data-field="corr_1y">相关(1年)</th><th data-field="beta_1y">Beta(1年)</th><th class="l" data-field="lag">对齐方式</th></tr></thead>
+      <tbody data-draw="markettable"></tbody>
+    </table>
+  </div>
+  <div class="sp-grid-2">
+    <div class="sp-card" id="sector-card">
+      <h3>标普11个板块近1个月涨跌</h3>
+      <div class="sp-hbars" data-draw="sectorbars" data-source="sectors"></div>
+      <p class="sp-small">站上200日均线的板块：<span data-draw="above200" data-source="sectors" data-field="above_200dma">—</span></p>
+    </div>
+    <div class="sp-card" id="corr-card">
+      <h3>标普与其他资产的60日滚动相关性</h3>
+      <div class="sp-legend"><span><i class="sp-sw" data-swatch="0"></i>10年美债收益率</span><span><i class="sp-sw" data-swatch="1"></i>黄金</span><span><i class="sp-sw" data-swatch="2"></i>美元指数</span><span><i class="sp-sw" data-swatch="3"></i>比特币</span><span><i class="sp-sw" data-swatch="4"></i>日经225(次日)</span></div>
+      <div class="sp-chart" data-draw="corrchart" data-source="corr_roll"></div>
+      <p class="sp-small">股票与美债收益率相关性为正时(股跌债涨)，债券能对冲股票；为负时，利率上行与股市下跌同时发生，是加息周期中更危险的组合。</p>
+    </div>
+  </div>
+</section>
+
+<section class="sp-section" id="news">
+  <h2>今日重要消息与解读</h2>
+  <p class="sp-prose" data-draw="v" data-source="brief" data-field="outlook" data-row="0">—</p>
+  <ol class="sp-news" data-draw="newslist" data-source="news"></ol>
+  <p class="sp-note" data-draw="v" data-source="brief" data-field="disclosure" data-row="0">—</p>
+</section>
+
+<section class="sp-section" id="drivers">
+  <h2>近期变化原因</h2>
+  <div class="sp-section">
+    <div class="sp-card" id="driver-card">
+      <h3>这轮回调的主要驱动(Claude估计的贡献权重)</h3>
+      <div class="sp-hbars" data-draw="driverbars" data-source="drivers"></div>
+      <div class="sp-wrap">
+        <table class="sp-t" data-source="drivers" data-row-key="rank">
+          <thead><tr><th class="l" data-field="driver">驱动</th><th class="l" data-field="evidence">数据证据</th><th class="l" data-field="explain">逻辑</th></tr></thead>
+          <tbody data-draw="drivertable"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="sp-card" id="timeline-card">
+      <h3>时间线</h3>
+      <div class="sp-wrap">
+        <table class="sp-t" data-source="timeline" data-row-key="date">
+          <thead><tr><th class="l" data-field="date">日期</th><th class="l" data-field="event">事件</th><th data-field="close">标普收盘</th><th data-field="chg_1d">当日</th></tr></thead>
+          <tbody data-draw="timelinetable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sp-section" id="calendar">
+  <h2>未来重要事件与情景概率</h2>
+  <p class="sp-note">时间为北京时间。概率与影响幅度是Claude结合市场定价(如CME FedWatch)、同类事件的历史当日波动和当前VIX隐含的日波动(约2%)给出的估计，不是市场报价；标注“待确认”的日期以公司公告为准。</p>
+  <div class="sp-wrap">
+    <table class="sp-t" data-source="calendar" data-row-key="id,scenario">
+      <thead><tr><th class="l" data-field="time_bj">时间</th><th class="l" data-field="event">事件</th><th class="l" data-field="scenario">情景</th><th data-field="prob">概率</th><th data-field="spx_move">标普当日影响</th><th class="l" data-field="note">说明</th></tr></thead>
+      <tbody data-draw="calendartable"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="sp-section" id="history">
+  <h2>长周期历史：涨跌的常态</h2>
+  <div class="sp-card">
+    <p class="sp-prose">1928年以来的 <b data-draw="v" data-fmt="num0" data-source="stats" data-field="years" data-row="0">—</b> 个完整年份中，标普500价格指数上涨的年份占 <b data-draw="v" data-fmt="pct0" data-source="stats" data-field="p_up_year" data-row="0">—</b>，年度回报中位数 <b data-draw="v" data-fmt="spct" data-source="stats" data-field="median_year" data-row="0">—</b>。只算价格年化约 <b data-draw="v" data-fmt="pct" data-source="stats" data-field="cagr_price" data-row="0">—</b>，计入股息约 <b data-draw="v" data-fmt="pct" data-source="stats" data-field="cagr_total_est" data-row="0">—</b>。</p>
+    <p class="sp-prose">上涨从来不平稳：<b data-draw="v" data-fmt="pct0" data-source="stats" data-field="p_intra_year_dd10" data-row="0">—</b> 的年份年内出现过10%以上的回撤，年内最大回撤的中位数是 <b data-draw="v" data-fmt="spct" data-source="stats" data-field="median_intra_year_dd" data-row="0">—</b>。像现在这样的回调在历史上大约每年一次，而跌幅超过20%的熊市共有 <b data-draw="v" data-fmt="num0" data-source="stats" data-field="n_bears" data-row="0">—</b> 次。</p>
+    <p class="sp-prose">持有时间是最大的朋友：只看价格，持有1年亏损的概率约 <b data-draw="v" data-fmt="pct0" data-source="holding" data-field="p_loss" data-where="years=1&amp;basis=仅价格">—</b>，持有10年降到 <b data-draw="v" data-fmt="pct0" data-source="holding" data-field="p_loss" data-where="years=10&amp;basis=仅价格">—</b>；计入股息后，持有20年的历史亏损概率为 <b data-draw="v" data-fmt="pct0" data-source="holding" data-field="p_loss" data-where="years=20&amp;basis=含股息(估算)">—</b>。</p>
+    <p class="sp-prose">估值决定长期回报的天花板：当前CAPE为 <b data-draw="v" data-fmt="num1" data-source="stats" data-field="cape_cape_now" data-row="0">—</b> 倍，高于 <b data-draw="v" data-fmt="pct0" data-source="stats" data-field="cape_pct_rank" data-row="0">—</b> 的历史月份。按1928-2016年CAPE与随后10年含股息回报的关系，当前估值对应的未来10年年化回报约 <b data-draw="v" data-fmt="pct" data-source="stats" data-field="cape_pred_10y" data-row="0">—</b>(上下浮动约 <b data-draw="v" data-fmt="pct" data-source="stats" data-field="cape_resid_sd" data-row="0">—</b>)。这个关系对1年几乎没有预测力，对10年的解释度R²约 <b data-draw="v" data-fmt="num2" data-source="stats" data-field="cape_r2" data-row="0">—</b>。</p>
+    <p class="sp-prose">本轮回调：<b data-draw="v" data-source="stats" data-field="cur_peak_date" data-row="0">—</b> 创下 <b data-draw="v" data-fmt="num2" data-source="stats" data-field="cur_peak" data-row="0">—</b> 点的高点后，<b data-draw="v" data-fmt="num0" data-source="stats" data-field="cur_days" data-row="0">—</b> 个交易日内回撤 <b data-draw="v" data-fmt="spct" data-source="stats" data-field="cur_dd" data-row="0">—</b>。</p>
+  </div>
+
+  <div class="sp-card" id="longrun-card">
+    <h3>1928年以来的标普500(对数坐标)</h3>
+    <div class="sp-legend"><span><i class="sp-sw" data-swatch="0"></i>标普500月末收盘</span><span><i class="sp-sw box" style="background: var(--color-bad)"></i>熊市/准熊市(高点到低点)</span><span><i class="sp-sw box" style="background: var(--cds-chart-muted)"></i>美国经济衰退(NBER)</span></div>
+    <div class="sp-chart" data-draw="longrun" data-source="monthly bears"></div>
+  </div>
+
+  <div class="sp-card" id="annual-card">
+    <h3>逐年涨跌(价格回报)</h3>
+    <div class="sp-chart" data-draw="annualchart" data-source="annual"></div>
+  </div>
+
+  <div class="sp-card" id="bear-card">
+    <h3>历次熊市与准熊市</h3>
+    <div class="sp-wrap sp-scroll">
+      <table class="sp-t" data-source="bears" data-row-key="peak_date">
+        <thead><tr><th class="l" data-field="peak_date">高点</th><th class="l" data-field="trough_date">低点</th><th data-field="depth">跌幅</th><th data-field="months_down">下跌月数</th><th data-field="months_to_recover">从低点回本月数</th><th data-field="ret_12m_after_trough">低点后12个月</th><th data-field="ret_12m_after_first_minus10">跌到-10%时买入后12个月</th><th class="l" data-field="cause">起因</th></tr></thead>
+        <tbody data-draw="beartable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="sp-grid-2">
+    <div class="sp-card" id="event-card">
+      <h3>与今天类似的情形之后</h3>
+      <div class="sp-wrap">
+        <table class="sp-t" data-source="events" data-row-key="event">
+          <thead><tr><th class="l" data-field="event">情形</th><th data-field="n">次数</th><th data-field="median_3m">3个月中位</th><th data-field="median_12m">12个月中位</th><th data-field="p_up_12m">12个月上涨比例</th><th data-field="p_further_10">6个月内再跌10%</th><th data-field="worst_12m">12个月最差</th></tr></thead>
+          <tbody data-draw="eventtable"></tbody>
+        </table>
+      </div>
+      <p class="sp-small">1950年以来(VIX为1990年以来)。次数含今天，结果统计只用已完整经历12个月的样本。</p>
+    </div>
+    <div class="sp-card" id="holding-card">
+      <h3>持有越久，亏损概率越低</h3>
+      <div class="sp-wrap">
+        <table class="sp-t" data-source="holding" data-row-key="years,basis">
+          <thead><tr><th class="l" data-field="years">持有年数</th><th class="l" data-field="basis">口径</th><th data-field="p_loss">亏损概率</th><th data-field="median_cagr">年化中位数</th><th data-field="worst_cagr">最差年化</th><th data-field="best_cagr">最好年化</th></tr></thead>
+          <tbody data-draw="holdingtable"></tbody>
+        </table>
+      </div>
+      <p class="sp-small">1928年以来所有起始月份的滚动窗口；股息按当月股息率估算。</p>
+    </div>
+  </div>
+
+  <div class="sp-grid-2">
+    <div class="sp-card" id="cape-card">
+      <h3>估值与随后10年年化回报(含股息)</h3>
+      <div class="sp-hbars" data-draw="capebars" data-source="cape_buckets stats"></div>
+      <p class="sp-small">柱为中位数，右侧为最差/最好；高亮为当前CAPE所在区间。</p>
+    </div>
+    <div class="sp-card" id="season-card">
+      <h3>季节性(1950年以来)</h3>
+      <div class="sp-chart short" data-draw="seasonchart" data-source="seasonality signal"></div>
+      <p class="sp-small">柱高为该月平均涨跌，数字为上涨年份占比；高亮为当前月与下个月。</p>
+      <h3>美国总统任期周期</h3>
+      <div class="sp-hbars" data-draw="cyclebars" data-source="cycle signal"></div>
+      <p class="sp-small">按日历年统计的平均涨跌与上涨年份占比；高亮为明年所处的阶段。</p>
+    </div>
+  </div>
+</section>
+
+<section class="sp-section" id="model">
+  <h2>模型可信度</h2>
+  <p class="sp-note">每个概率都做了1960年以来的逐年滚动样本外检验。AUC为0.5相当于抛硬币，越接近1越能区分好坏结果；Brier技能分数为正，表示比直接用历史平均更准。</p>
+  <div class="sp-wrap">
+    <table class="sp-t" data-source="model_card" data-row-key="key">
+      <thead><tr><th class="l" data-field="label">概率</th><th class="l" data-field="definition">定义</th><th data-field="auc">样本外AUC</th><th data-field="brier_skill">Brier技能分数</th><th data-field="auc_1960_1989">AUC 1960-1989</th><th data-field="auc_1990_2007">AUC 1990-2007</th><th data-field="auc_2008_2026">AUC 2008-2026</th><th data-field="realized_rate">实际发生率</th><th class="l" data-field="verdict">结论</th></tr></thead>
+      <tbody data-draw="modeltable"></tbody>
+    </table>
+  </div>
+  <details class="sp-more">
+    <summary>方法与局限</summary>
+    <ul>
+      <li>追加、12个月上涨、减持概率：在1930年以来的交易日里，用回撤、20日波动率、偏离200日线、近1月涨跌、12-1个月动量五个价格状态变量找出与今天最相似的1000天，统计其结果，再向历史平均收缩三分之一。</li>
+      <li>3个月再跌≥10%风险：同类状态变量的L2正则化逻辑回归。波动率聚集是金融市场最稳定的规律之一，因此这项预测力最强。</li>
+      <li>最初版本加入了估值、利率、信用利差等宏观因子，但滚动检验显示它们与12个月回报的关系在不同年代方向相反(样本外AUC低于0.5)，所以没有放进概率模型，只在因子面板里展示其历史条件概率。</li>
+      <li>历史统计不保证未来；AI驱动的市场结构、指数集中度和本轮加息周期在历史上没有完全对应的样本。</li>
+    </ul>
+  </details>
+</section>
+
+<footer class="sp-foot">
+  <p>数据来源：Yahoo Finance(指数、ETF、期货、汇率)，FRED(美债收益率、信用利差、金融条件、NBER衰退)，multpl.com(席勒CAPE、股息率)；新闻来自公开报道，链接见各条目。</p>
+  <p>本看板仅供研究与学习，不构成投资建议。概率来自历史统计与模型，市场可能出现历史上没有过的情形。</p>
+</footer>
+
+</div>
+
+<script>
+dash.loader('signal', { description: '取出 today.json 中的 signal 表(今日信号)', fn: ({ answer }) => answer.signal });
+dash.loader('model_card', { description: '取出 today.json 中的 model_card 表', fn: ({ answer }) => answer.model_card });
+dash.loader('factors', { description: '取出 today.json 中的 factors 表', fn: ({ answer }) => answer.factors });
+dash.loader('risk_drivers', { description: '取出 today.json 中的 risk_drivers 表', fn: ({ answer }) => answer.risk_drivers });
+dash.loader('analogs', { description: '取出 today.json 中的 analogs 表', fn: ({ answer }) => answer.analogs });
+dash.loader('analog_dist', { description: '取出 today.json 中的 analog_dist 表', fn: ({ answer }) => answer.analog_dist });
+dash.loader('yearend', { description: '取出 today.json 中的 yearend 表', fn: ({ answer }) => answer.yearend });
+dash.loader('markets', { description: '取出 today.json 中的 markets 表', fn: ({ answer }) => answer.markets });
+dash.loader('sectors', { description: '取出 today.json 中的 sectors 表', fn: ({ answer }) => answer.sectors });
+dash.loader('price', { description: '取出 series.json 中的 price 表', fn: ({ answer }) => answer.price });
+dash.loader('corr_roll', { description: '取出 series.json 中的 corr_roll 表', fn: ({ answer }) => answer.corr_roll });
+dash.loader('stats', { description: '取出 history.json 中的 stats 表', fn: ({ answer }) => answer.stats });
+dash.loader('annual', { description: '取出 history.json 中的 annual 表', fn: ({ answer }) => answer.annual });
+dash.loader('monthly', { description: '取出 history.json 中的 monthly 表', fn: ({ answer }) => answer.monthly });
+dash.loader('bears', { description: '取出 history.json 中的 bears 表', fn: ({ answer }) => answer.bears });
+dash.loader('holding', { description: '取出 history.json 中的 holding 表', fn: ({ answer }) => answer.holding });
+dash.loader('events', { description: '取出 history.json 中的 events 表', fn: ({ answer }) => answer.events });
+dash.loader('cape_buckets', { description: '取出 history.json 中的 cape_buckets 表', fn: ({ answer }) => answer.cape_buckets });
+dash.loader('seasonality', { description: '取出 history.json 中的 seasonality 表', fn: ({ answer }) => answer.seasonality });
+dash.loader('cycle', { description: '取出 history.json 中的 cycle 表', fn: ({ answer }) => answer.cycle });
+dash.loader('brief', { description: '取出 notes.json 中的 brief 表(标题、展望、声明)', fn: ({ answer }) => answer.brief });
+dash.loader('news', { description: '取出 notes.json 中的 news 表', fn: ({ answer }) => answer.news });
+dash.loader('drivers', { description: '取出 notes.json 中的 drivers 表', fn: ({ answer }) => answer.drivers });
+dash.loader('timeline', { description: '取出 notes.json 中的 timeline 表', fn: ({ answer }) => answer.timeline });
+dash.loader('calendar', { description: '取出 notes.json 中的 calendar 表', fn: ({ answer }) => answer.calendar });
+</script>
+
+<script>
+window.SP = (() => {
+  const ok = (v) => v !== null && v !== undefined && !(typeof v === 'number' && !isFinite(v));
+  const pct = (v, d = 1) => ok(v) ? (v * 100).toFixed(d) + '%' : '—';
+  const spct = (v, d = 1) => ok(v) ? (v > 0 ? '+' : '') + (v * 100).toFixed(d) + '%' : '—';
+  const num = (d) => (v) => ok(v) ? d3.format(`,.${d}f`)(v) : '—';
+  const F = {
+    text: (v) => ok(v) ? String(v) : '—', pct: (v) => pct(v, 1), pct0: (v) => pct(v, 0), spct: (v) => spct(v, 1),
+    spct0: (v) => spct(v, 0), num0: num(0), num1: num(1), num2: num(2), snum2: (v) => ok(v) ? (v > 0 ? '+' : '') + v.toFixed(2) : '—',
+  };
+  const parseDate = d3.utcParse('%Y-%m-%d');
+  const color = (i) => (i === 'bad' ? 'var(--color-bad)' : (dash.colors[i % dash.colors.length]));
+  const tone = (el, v) => { el.classList.remove('pos', 'neg'); if (ok(v) && v !== 0) el.classList.add(v > 0 ? 'pos' : 'neg'); };
+
+  function findRow(rows, el) {
+    if (el.dataset.where) {
+      const conds = el.dataset.where.split('&').map((p) => p.split('=').map(decodeURIComponent));
+      return rows.find((r) => conds.every(([k, v]) => String(r[k]) === v));
+    }
+    return rows[+(el.dataset.row || 0)];
+  }
+
+  function placeholder(el, d, inTable) {
+    const msg = d.status === 'error' ? '这部分数据没有加载出来' : '—';
+    if (inTable) {
+      const tr = document.createElement('tr'); const td = document.createElement('td');
+      td.className = 'l muted'; td.colSpan = 20; td.textContent = d.status === 'error' ? msg : '加载中…';
+      tr.append(td); el.replaceChildren(tr);
+    } else { el.replaceChildren(document.createTextNode(msg)); }
+  }
+
+  function table(tbody, id, cols, keys, opts = {}) {
+    const d = dash.data(id);
+    if (d.status !== 'ok') { placeholder(tbody, d, true); return; }
+    const rows = opts.rows ? opts.rows(d.data) : d.data;
+    const frag = document.createDocumentFragment();
+    rows.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      tr.dataset.key = keys.map((k) => encodeURIComponent(String(r[k]))).join(',');
+      if (opts.rowClass) { const c = opts.rowClass(r, i, rows); if (c) tr.className = c; }
+      for (const c of cols) {
+        const td = document.createElement('td');
+        td.className = c.cls || '';
+        if (c.render) c.render(td, r, i, rows);
+        else td.textContent = (c.fmt || F.text)(r[c.field]);
+        if (c.tone) tone(td, typeof c.tone === 'function' ? c.tone(r) : r[c.field]);
+        tr.append(td);
+      }
+      frag.append(tr);
+    });
+    tbody.replaceChildren(frag);
+  }
+
+  function cellBar(td, v, max, col, fmt) {
+    const wrap = document.createElement('span'); wrap.className = 'sp-cellbar';
+    const tr = document.createElement('span'); tr.className = 'sp-track';
+    const f = document.createElement('span'); f.className = 'sp-fill';
+    f.style.width = Math.max(0, Math.min(1, (v || 0) / max)) * 100 + '%'; f.style.background = col;
+    tr.append(f);
+    const t = document.createElement('span'); t.textContent = fmt(v);
+    wrap.append(tr, t); td.replaceChildren(wrap);
+  }
+
+  function hbars(el, items, o = {}) {
+    // items: [{label, value, text, color, strong}]
+    const vals = items.map((d) => d.value).filter(ok);
+    const lo = Math.min(0, o.min ?? d3.min(vals)), hi = Math.max(0, o.max ?? d3.max(vals));
+    const sc = (v) => ((v - lo) / (hi - lo || 1)) * 100;
+    const frag = document.createDocumentFragment();
+    for (const d of items) {
+      const row = document.createElement('div'); row.className = 'sp-hrow';
+      const lab = document.createElement('span'); lab.textContent = d.label;
+      if (d.strong) lab.style.fontWeight = '600';
+      const tr = document.createElement('span'); tr.className = 'sp-track';
+      const z = document.createElement('span'); z.className = 'sp-zero'; z.style.left = sc(0) + '%';
+      const f = document.createElement('span'); f.className = 'sp-fill';
+      const a = sc(Math.min(0, d.value)), b = sc(Math.max(0, d.value));
+      f.style.left = a + '%'; f.style.width = Math.max(0.6, b - a) + '%'; f.style.background = d.color || color(0);
+      f.style.opacity = d.dim ? '0.45' : '1';
+      tr.append(f, z);
+      const v = document.createElement('span'); v.className = 'v'; v.textContent = d.text;
+      if (d.textClass) v.classList.add(d.textClass);
+      row.append(lab, tr, v); frag.append(row);
+    }
+    el.replaceChildren(frag);
+  }
+
+  function tipBox(el) {
+    const t = document.createElement('div'); t.className = 'sp-tip'; t.hidden = true; el.append(t); return t;
+  }
+  function showTip(tip, el, x, y, lines) {
+    tip.replaceChildren(...lines.map(([k, v], i) => {
+      const p = document.createElement('div');
+      if (i === 0) { const b = document.createElement('b'); b.textContent = k; p.append(b); }
+      else { p.textContent = k + '  ' + v; }
+      return p;
+    }));
+    tip.hidden = false;
+    const w = tip.offsetWidth, W = el.clientWidth;
+    tip.style.left = Math.max(0, Math.min(W - w - 2, x + 14)) + 'px';
+    tip.style.top = Math.max(0, y) + 'px';
+  }
+
+  function logTicks(lo, hi) {
+    const out = [];
+    for (let e = Math.floor(Math.log10(lo)); e <= Math.ceil(Math.log10(hi)); e++) {
+      for (const m of [1, 3]) { const t = m * 10 ** e; if (t >= lo && t <= hi) out.push(t); }
+    }
+    return out;
+  }
+
+  function line(el, o) {
+    const W = Math.max(260, el.clientWidth), H = o.height || 260;
+    const rows = o.rows.filter((r) => r._x);
+    if (!rows.length) { el.replaceChildren(); return; }
+    const vals = o.series.flatMap((s) => rows.map((r) => r[s.key]).filter((v) => ok(v) && (!o.log || v > 0)));
+    let dom = o.domain || d3.extent(vals);
+    const y = o.log ? d3.scaleLog().domain(dom) : d3.scaleLinear().domain(dom);
+    if (!o.domain && !o.log) y.nice(4);
+    const ticks = o.log ? logTicks(...y.domain()) : y.ticks(o.yTicks || 4);
+    const fy = o.yFmt || d3.format('~s');
+    el.replaceChildren();
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`)
+      .attr('role', 'img').attr('aria-label', o.label || '');
+    // measure tick labels for the left margin
+    const probe = svg.append('g');
+    const widths = ticks.map((t) => probe.append('text').text(fy(t)).node().getComputedTextLength() || fy(t).length * 6.5);
+    probe.remove();
+    const m = { t: 8, r: o.right ?? 8, b: 22, l: Math.ceil(d3.max(widths) || 30) + 10 };
+    const x = d3.scaleUtc().domain(d3.extent(rows, (r) => r._x)).range([m.l, W - m.r]);
+    y.range([H - m.b, m.t]);
+    for (const b of o.bands || []) {
+      const x0 = x(b.x0), x1 = x(b.x1);
+      if (x1 < m.l || x0 > W - m.r) continue;
+      svg.append('rect').attr('x', Math.max(m.l, x0)).attr('width', Math.max(1.5, Math.min(W - m.r, x1) - Math.max(m.l, x0)))
+        .attr('y', m.t).attr('height', H - m.b - m.t).style('fill', b.color).style('opacity', b.opacity ?? 0.14);
+    }
+    const ax = svg.append('g').attr('class', 'sp-axis');
+    for (const t of ticks) {
+      ax.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(t)).attr('y2', y(t))
+        .style('stroke', 'var(--cds-chart-grid)').style('stroke-width', 1);
+      ax.append('text').attr('x', m.l - 6).attr('y', y(t)).attr('dy', '0.32em').attr('text-anchor', 'end').text(fy(t));
+    }
+    for (const r of o.refs || []) {
+      svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(r)).attr('y2', y(r))
+        .style('stroke', 'var(--cds-chart-reference)').style('stroke-dasharray', '3 3');
+    }
+    const nx = Math.max(2, Math.min(8, Math.floor((W - m.l) / 80)));
+    const xt = x.ticks(nx);
+    const fx = o.xFmt || d3.utcFormat(o.yearsOnly ? '%Y' : '%Y-%m');
+    ax.selectAll('text.x').data(xt).join('text').attr('class', 'x').attr('x', (d) => x(d)).attr('y', H - 5)
+      .attr('text-anchor', 'middle').text(fx);
+    for (const s of o.series) {
+      const ln = d3.line().defined((r) => ok(r[s.key]) && (!o.log || r[s.key] > 0)).x((r) => x(r._x)).y((r) => y(r[s.key]));
+      svg.append('path').datum(rows).attr('d', ln).style('fill', 'none').style('stroke', s.color)
+        .style('stroke-width', s.width || 1.6).style('stroke-dasharray', s.dash || null).style('stroke-linejoin', 'round');
+    }
+    // emphasised endpoint on the first series
+    const last = rows[rows.length - 1], s0 = o.series[0];
+    if (ok(last[s0.key])) svg.append('circle').attr('cx', x(last._x)).attr('cy', y(last[s0.key])).attr('r', 3).style('fill', s0.color);
+    // hover
+    const tip = tipBox(el);
+    const rule = svg.append('line').attr('y1', m.t).attr('y2', H - m.b).style('stroke', 'var(--cds-chart-reference)').style('opacity', 0);
+    const dots = o.series.map((s) => svg.append('circle').attr('r', 3).style('fill', s.color).style('opacity', 0));
+    const xs = rows.map((r) => r._x);
+    const bis = d3.bisector((d) => d).center;
+    svg.append('rect').attr('x', m.l).attr('y', m.t).attr('width', W - m.l - m.r).attr('height', H - m.t - m.b)
+      .style('fill', 'transparent').style('cursor', 'crosshair')
+      .on('pointermove', (ev) => {
+        const [px] = d3.pointer(ev);
+        const r = rows[bis(xs, x.invert(px))];
+        const cx = x(r._x);
+        rule.attr('x1', cx).attr('x2', cx).style('opacity', 1);
+        o.series.forEach((s, i) => {
+          if (ok(r[s.key]) && (!o.log || r[s.key] > 0)) dots[i].attr('cx', cx).attr('cy', y(r[s.key])).style('opacity', 1);
+          else dots[i].style('opacity', 0);
+        });
+        showTip(tip, el, cx, m.t, o.tip(r));
+      })
+      .on('pointerleave', () => { tip.hidden = true; rule.style('opacity', 0); dots.forEach((d) => d.style('opacity', 0)); });
+  }
+
+  function vbars(el, o) {
+    const W = Math.max(260, el.clientWidth), H = o.height || 200;
+    const rows = o.rows;
+    el.replaceChildren();
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`)
+      .attr('role', 'img').attr('aria-label', o.label || '');
+    const vals = rows.map(o.y);
+    const y = d3.scaleLinear().domain([Math.min(0, d3.min(vals)), Math.max(0, d3.max(vals))]).nice(4);
+    const ticks = y.ticks(4), fy = o.yFmt;
+    const probe = svg.append('g');
+    const wmax = d3.max(ticks.map((t) => probe.append('text').text(fy(t)).node().getComputedTextLength() || 30));
+    probe.remove();
+    const m = { t: o.top ?? 14, r: 6, b: 22, l: Math.ceil(wmax) + 10 };
+    const x = d3.scaleBand().domain(rows.map(o.x)).range([m.l, W - m.r]).padding(o.pad ?? 0.2);
+    y.range([H - m.b, m.t]);
+    const ax = svg.append('g').attr('class', 'sp-axis');
+    for (const t of ticks) {
+      ax.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(t)).attr('y2', y(t))
+        .style('stroke', t === 0 ? 'var(--cds-chart-axis)' : 'var(--cds-chart-grid)');
+      ax.append('text').attr('x', m.l - 6).attr('y', y(t)).attr('dy', '0.32em').attr('text-anchor', 'end').text(fy(t));
+    }
+    const every = o.labelEvery ? o.labelEvery(x.bandwidth()) : 1;
+    ax.selectAll('text.x').data(rows.filter((r, i) => i % every === 0)).join('text').attr('class', 'x')
+      .attr('x', (r) => x(o.x(r)) + x.bandwidth() / 2).attr('y', H - 5).attr('text-anchor', 'middle').text((r) => o.xLabel ? o.xLabel(r) : o.x(r));
+    svg.append('g').selectAll('rect').data(rows).join('rect')
+      .attr('x', (r) => x(o.x(r))).attr('width', x.bandwidth())
+      .attr('y', (r) => y(Math.max(0, o.y(r)))).attr('height', (r) => Math.max(1, Math.abs(y(o.y(r)) - y(0))))
+      .style('fill', (r) => o.color(r)).style('opacity', (r) => (o.dim && o.dim(r) ? 0.45 : 1));
+    if (o.barLabel) {
+      svg.append('g').selectAll('text').data(rows).join('text')
+        .attr('x', (r) => x(o.x(r)) + x.bandwidth() / 2)
+        .attr('y', (r) => (o.y(r) >= 0 ? y(o.y(r)) - 3 : y(o.y(r)) + 11)).attr('text-anchor', 'middle')
+        .text((r) => o.barLabel(r));
+    }
+    const tip = tipBox(el);
+    svg.append('g').selectAll('rect').data(rows).join('rect')
+      .attr('x', (r) => x(o.x(r)) - (x.step() - x.bandwidth()) / 2).attr('width', x.step())
+      .attr('y', m.t).attr('height', H - m.t - m.b).style('fill', 'transparent')
+      .on('pointerenter', (ev, r) => showTip(tip, el, x(o.x(r)), m.t, o.tip(r)))
+      .on('pointerleave', () => { tip.hidden = true; });
+  }
+
+  return { ok, pct, spct, F, parseDate, color, tone, findRow, placeholder, table, cellBar, hbars, line, vbars };
+})();
+
+document.querySelectorAll('[data-swatch]').forEach((s) => { s.style.background = SP.color(s.dataset.swatch === 'bad' ? 'bad' : +s.dataset.swatch); });
+</script>
+
+<script>
+// ---------- single values ----------
+dash.draw('v', (el) => {
+  const d = dash.data(el.dataset.source);
+  if (d.status !== 'ok') { SP.placeholder(el, d); return; }
+  const r = SP.findRow(d.data, el);
+  const v = r ? r[el.dataset.field] : null;
+  el.textContent = (SP.F[el.dataset.fmt || 'text'] || SP.F.text)(v);
+  if (el.dataset.tone === 'sign') SP.tone(el, v);
+});
+
+dash.draw('stance', (el) => {
+  const d = dash.data('signal');
+  if (d.status !== 'ok') { SP.placeholder(el, d); return; }
+  const s = d.data[0].stance || '—';
+  el.textContent = s;
+  el.classList.remove('ok', 'warn', 'neutral');
+  el.classList.add(/加仓/.test(s) ? 'ok' : /减持/.test(s) ? 'warn' : 'neutral');
+});
+
+dash.draw('verdict', (el) => {
+  const d = dash.data('model_card');
+  if (d.status !== 'ok') { SP.placeholder(el, d); return; }
+  const r = SP.findRow(d.data, el);
+  const v = r ? r.verdict : '—';
+  el.textContent = v;
+  el.classList.remove('ok', 'warn', 'bad');
+  el.classList.add(v === '有效' ? 'ok' : v === '较弱' ? 'warn' : 'bad');
+});
+
+dash.draw('riskbars', (el) => {
+  const d = dash.data('risk_drivers');
+  if (d.status !== 'ok') { SP.placeholder(el, d); return; }
+  SP.hbars(el, d.data.map((r) => ({ label: r.factor, value: r.contribution, text: SP.F.snum2(r.contribution),
+    color: r.contribution > 0 ? 'var(--color-bad)' : 'var(--color-ok)' })));
+});
+
+// ---------- trend charts ----------
+function priceRows() {
+  const d = dash.data('price');
+  if (d.status !== 'ok') return null;
+  return d.data.map((r) => Object.assign({ _x: SP.parseDate(r.date) }, r));
+}
+dash.draw('pricechart', (el) => {
+  const rows = priceRows();
+  if (!rows) { SP.placeholder(el, dash.data('price')); return; }
+  SP.line(el, {
+    rows, height: 260, label: '近3年标普500收盘价与50日、200日均线',
+    series: [{ key: 'close', color: SP.color(0), width: 1.8 }, { key: 'ma50', color: SP.color(1), width: 1.1 }, { key: 'ma200', color: SP.color(2), width: 1.1 }],
+    yFmt: d3.format(',.0f'),
+    tip: (r) => [[r.date, ''], ['收盘', SP.F.num2(r.close)], ['50日线', SP.F.num0(r.ma50)], ['200日线', SP.F.num0(r.ma200)]],
+  });
+});
+dash.draw('probchart', (el) => {
+  const rows = priceRows();
+  if (!rows) { SP.placeholder(el, dash.data('price')); return; }
+  SP.line(el, {
+    rows, height: 150, label: '近3年各项概率的样本外预测', domain: [0, 1], yTicks: 4, yFmt: d3.format('.0%'),
+    series: [{ key: 'p_add', color: SP.color(0) }, { key: 'p_up12', color: SP.color(1) }, { key: 'p_trim', color: SP.color(2) }, { key: 'p_risk', color: SP.color('bad') }],
+    tip: (r) => [[r.date, ''], ['追加', SP.pct(r.p_add)], ['12个月上涨', SP.pct(r.p_up12)], ['减持', SP.pct(r.p_trim)], ['3个月再跌≥10%', SP.pct(r.p_risk)]],
+  });
+});
+
+// ---------- analogs ----------
+dash.draw('range', (el) => {
+  const d = dash.data('analog_dist');
+  if (d.status !== 'ok') { SP.placeholder(el, d); return; }
+  const lo = Math.min(0, d3.min(d.data, (r) => r.p10)), hi = Math.max(0, d3.max(d.data, (r) => r.p90));
+  const sc = (v) => ((v - lo) / (hi - lo)) * 100;
+  const frag = document.createDocumentFragment();
+  for (const r of d.data) {
+    const row = document.createElement('div'); row.className = 'sp-rrow';
+    const lab = document.createElement('span'); lab.textContent = r.horizon;
+    const tr = document.createElement('div'); tr.className = 'sp-rtrack';
+    const a = document.createElement('span'); a.className = 'p1090'; a.style.left = sc(r.p10) + '%'; a.style.width = (sc(r.p90) - sc(r.p10)) + '%';
+    const b = document.createElement('span'); b.className = 'p2575'; b.style.left = sc(r.p25) + '%'; b.style.width = (sc(r.p75) - sc(r.p25)) + '%'; b.style.background = SP.color(0);
+    const z = document.createElement('span'); z.className = 'sp-zero'; z.style.left = sc(0) + '%';
+    const m = document.createElement('span'); m.className = 'med'; m.style.left = `calc(${sc(r.median)}% - 1px)`;
+    tr.append(a, b, z, m);
+    const cap = document.createElement('span'); cap.className = 'sp-rcap';
+    cap.textContent = `中位 ${SP.spct(r.median)} · 10%-90%: ${SP.spct(r.p10)} 至 ${SP.spct(r.p90)} · 上涨比例 ${SP.pct(r.p_up, 0)}`;
+    row.append(lab, tr, cap); frag.append(row);
+  }
+  el.replaceChildren(frag);
+});
+
+dash.draw('analogtable', (tb) => SP.table(tb, 'analogs', [
+  { field: 'date', cls: 'l' }, { field: 'close', fmt: SP.F.num2 }, { field: 'dd', fmt: SP.F.spct, tone: true },
+  { field: 'rv20', fmt: SP.F.pct }, { field: 'ret1m', fmt: SP.F.spct, tone: true }, { field: 'fwd63', fmt: SP.F.spct, tone: true },
+  { field: 'fwd252', fmt: SP.F.spct, tone: true }, { field: 'fwdmin126', fmt: SP.F.spct, tone: true },
+], ['date']));
+
+// ---------- factors ----------
+const FACTOR_FMT = { pct: SP.F.spct, num: SP.F.num2, ratio: SP.F.num2, pp: SP.F.snum2, pctpt: SP.F.num2 };
+dash.draw('factortable', (tb) => SP.table(tb, 'factors', [
+  { field: 'factor', cls: 'l' }, { field: 'group', cls: 'l' },
+  { field: 'value', render: (td, r) => { td.textContent = (FACTOR_FMT[r.unit] || SP.F.num2)(r.value); } },
+  { field: 'percentile', render: (td, r) => SP.cellBar(td, r.percentile, 1, SP.color(0), (v) => SP.pct(v, 0)) },
+  { field: 'p_add_bin', fmt: SP.F.pct, render: (td, r) => { td.textContent = SP.pct(r.p_add_bin); td.className = r.p_add_bin - r.p_add_base >= 0.05 ? 'pos' : r.p_add_bin - r.p_add_base <= -0.05 ? 'neg' : ''; } },
+  { field: 'p_add_base', fmt: SP.F.pct, cls: 'muted' },
+  { field: 'p_risk_bin', render: (td, r) => { td.textContent = SP.pct(r.p_risk_bin); td.className = r.p_risk_bin - r.p_risk_base >= 0.04 ? 'neg' : r.p_risk_bin - r.p_risk_base <= -0.03 ? 'pos' : ''; } },
+  { field: 'p_risk_base', fmt: SP.F.pct, cls: 'muted' },
+  { field: 'lean_12m', render: (td, r) => { td.textContent = r.lean_12m; td.className = 'l ' + (r.lean_12m === '偏多' ? 'pos' : r.lean_12m === '偏空' ? 'neg' : 'muted'); } },
+  { field: 'lean_3m', render: (td, r) => { td.textContent = r.lean_3m; td.className = 'l ' + (r.lean_3m === '风险偏高' ? 'neg' : r.lean_3m === '风险偏低' ? 'pos' : 'muted'); } },
+  { field: 'since', fmt: (v) => String(v) },
+  { field: 'note', cls: 'w' },
+], ['key']));
+
+// ---------- markets ----------
+const chgFmt = (r, v) => (r.unit === 'pp' ? SP.F.snum2(v) : SP.spct(v));
+dash.draw('markettable', (tb) => SP.table(tb, 'markets', [
+  { field: 'name', cls: 'l' }, { field: 'group', cls: 'l muted' },
+  { field: 'last', render: (td, r) => { td.textContent = r.last >= 1000 ? SP.F.num0(r.last) : SP.F.num2(r.last); } },
+  ...['chg_1d', 'chg_1w', 'chg_1m', 'chg_3m', 'chg_ytd'].map((f) => ({ field: f, render: (td, r) => { td.textContent = chgFmt(r, r[f]); SP.tone(td, r.symbol === '^VIX' ? -r[f] : r[f]); } })),
+  { field: 'corr_60d', fmt: SP.F.num2 }, { field: 'corr_1y', fmt: SP.F.num2 }, { field: 'beta_1y', fmt: SP.F.num2 },
+  { field: 'lag', cls: 'l muted' },
+], ['symbol']));
+
+dash.draw('sectorbars', (el) => {
+  const d = dash.data('sectors');
+  if (d.status !== 'ok') { SP.placeholder(el, d); return; }
+  SP.hbars(el, d.data.map((r) => ({ label: r.sector, value: r.chg_1m, text: SP.spct(r.chg_1m),
+    color: r.chg_1m >= 0 ? 'var(--color-ok)' : 'var(--color-bad)', dim: !r.above_200dma })));
+});
+dash.draw('above200', (el) => {
+  const d = dash.data('sectors');
+  if (d.status !== 'ok') { SP.placeholder(el, d); return; }
+  const up = d.data.filter((r) => r.above_200dma).map((r) => r.sector);
+  el.textContent = up.length ? `${up.length}/11(${up.join('、')})；颜色较淡的板块在200日线下方` : '0/11';
+});
+
+dash.draw('corrchart', (el) => {
+  const d = dash.data('corr_roll');
+  if (d.status !== 'ok') { SP.placeholder(el, d); return; }
+  const rows = d.data.map((r) => Object.assign({ _x: SP.parseDate(r.date) }, r));
+  SP.line(el, {
+    rows, height: 220, label: '标普500与美债收益率、黄金、美元、比特币、日经的60日滚动相关系数', domain: [-1, 1], yTicks: 4,
+    yFmt: d3.format('.1f'), refs: [0],
+    series: [{ key: 'us10y', color: SP.color(0) }, { key: 'gold', color: SP.color(1) }, { key: 'dxy', color: SP.color(2) }, { key: 'btc', color: SP.color(3) }, { key: 'nikkei', color: SP.color(4) }],
+    tip: (r) => [[r.date, ''], ['10年美债', SP.F.num2(r.us10y)], ['黄金', SP.F.num2(r.gold)], ['美元', SP.F.num2(r.dxy)], ['比特币', SP.F.num2(r.btc)], ['日经(次日)', SP.F.num2(r.nikkei)]],
+  });
+});
+
+// ---------- news & drivers ----------
+dash.draw('newslist', (el) => {
+  const d = dash.data('news');
+  if (d.status !== 'ok') { SP.placeholder(el, d); return; }
+  const frag = document.createDocumentFragment();
+  d.data.forEach((r, i) => {
+    const li = document.createElement('li');
+    const meta = document.createElement('div'); meta.className = 'meta';
+    const chip = document.createElement('span'); chip.className = 'sp-chip ' + (r.impact === '利空' ? 'neg' : r.impact === '利多' ? 'pos' : 'muted');
+    chip.textContent = r.impact; chip.dataset.source = 'news'; chip.dataset.field = 'impact'; chip.dataset.row = String(i);
+    const date = document.createElement('span'); date.textContent = r.date; date.dataset.source = 'news'; date.dataset.field = 'date'; date.dataset.row = String(i);
+    const lvl = document.createElement('span'); lvl.textContent = '影响力 ' + '●'.repeat(r.magnitude || 1) + '○'.repeat(Math.max(0, 3 - (r.magnitude || 1)));
+    meta.append(chip, date, lvl);
+    const t = document.createElement('div'); t.className = 't'; t.textContent = r.title; t.dataset.source = 'news'; t.dataset.field = 'title'; t.dataset.row = String(i);
+    const det = document.createElement('p'); det.className = 'd'; det.textContent = r.detail; det.dataset.source = 'news'; det.dataset.field = 'detail'; det.dataset.row = String(i);
+    const take = document.createElement('p'); take.className = 'k'; take.textContent = '解读：' + r.take; take.dataset.source = 'news'; take.dataset.field = 'take'; take.dataset.row = String(i);
+    const src = document.createElement('div'); src.className = 'meta';
+    if (typeof r.url === 'string' && /^https?:\/\//.test(r.url)) {
+      const a = document.createElement('a'); a.href = r.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = '来源：' + r.source; src.append(a);
+    } else { src.textContent = '来源：' + (r.source || '—'); }
+    li.append(meta, t, det, take, src); frag.append(li);
+  });
+  el.replaceChildren(frag);
+});
+
+dash.draw('driverbars', (el) => {
+  const d = dash.data('drivers');
+  if (d.status !== 'ok') { SP.placeholder(el, d); return; }
+  SP.hbars(el, d.data.map((r, i) => ({ label: r.driver, value: r.weight, text: SP.pct(r.weight, 0), color: SP.color(i) })), { min: 0 });
+});
+dash.draw('drivertable', (tb) => SP.table(tb, 'drivers', [
+  { field: 'driver', cls: 'l' }, { field: 'evidence', cls: 'w' }, { field: 'explain', cls: 'w' },
+], ['rank']));
+dash.draw('timelinetable', (tb) => SP.table(tb, 'timeline', [
+  { field: 'date', cls: 'l' }, { field: 'event', cls: 'w' }, { field: 'close', fmt: SP.F.num2 }, { field: 'chg_1d', fmt: SP.F.spct, tone: true },
+], ['date']));
+
+// ---------- calendar ----------
+dash.draw('calendartable', (tb) => SP.table(tb, 'calendar', [
+  { field: 'time_bj', cls: 'l', render: (td, r, i, rows) => { td.textContent = i > 0 && rows[i - 1].id === r.id ? '' : r.time_bj; td.className = 'l'; } },
+  { field: 'event', render: (td, r, i, rows) => { td.textContent = i > 0 && rows[i - 1].id === r.id ? '' : r.event + '  ' + '★'.repeat(r.importance || 1); td.className = 'w'; } },
+  { field: 'scenario', cls: 'w' },
+  { field: 'prob', render: (td, r) => SP.cellBar(td, r.prob, 1, SP.color(0), (v) => SP.pct(v, 0)) },
+  { field: 'spx_move', render: (td, r) => { td.textContent = r.spx_move; td.className = /^-/.test(r.spx_move) ? 'neg' : /^\+/.test(r.spx_move) ? 'pos' : ''; } },
+  { field: 'note', cls: 'w muted' },
+], ['id', 'scenario'], { rowClass: (r, i, rows) => (i > 0 && rows[i - 1].id !== r.id ? 'first' : '') }));
+
+// ---------- history ----------
+dash.draw('longrun', (el) => {
+  const m = dash.data('monthly'), b = dash.data('bears');
+  if (m.status !== 'ok') { SP.placeholder(el, m); return; }
+  const rows = m.data.map((r) => Object.assign({ _x: SP.parseDate(r.date) }, r));
+  const bands = [];
+  let start = null;
+  rows.forEach((r, i) => {
+    if (r.recession === 1 && start === null) start = r._x;
+    if ((r.recession !== 1 || i === rows.length - 1) && start !== null) { bands.push({ x0: start, x1: r._x, color: 'var(--cds-chart-muted)', opacity: 0.22 }); start = null; }
+  });
+  if (b.status === 'ok') for (const e of b.data) bands.push({ x0: SP.parseDate(e.peak_date), x1: SP.parseDate(e.trough_date), color: 'var(--color-bad)', opacity: 0.2 });
+  SP.line(el, {
+    rows, height: 300, log: true, yearsOnly: true, label: '1928年以来标普500月末收盘(对数坐标)，标出熊市与经济衰退',
+    series: [{ key: 'close', color: SP.color(0), width: 1.4 }], bands, yFmt: d3.format(',.0f'),
+    tip: (r) => [[r.date.slice(0, 7), ''], ['收盘', SP.F.num2(r.close)], ['距高点', SP.spct(r.dd)], ['CAPE', SP.F.num1(r.cape)]],
+  });
+});
+
+dash.draw('annualchart', (el) => {
+  const d = dash.data('annual');
+  if (d.status !== 'ok') { SP.placeholder(el, d); return; }
+  SP.vbars(el, {
+    rows: d.data, height: 220, label: '1928年以来每年的标普500价格回报', x: (r) => String(r.year), y: (r) => r.price_return,
+    yFmt: d3.format('.0%'), pad: 0.15,
+    labelEvery: (bw) => Math.max(1, Math.ceil(44 / (bw / 0.85))), xLabel: (r) => String(r.year),
+    color: (r) => (r.price_return >= 0 ? 'var(--color-ok)' : 'var(--color-bad)'), dim: (r) => r.ytd,
+    tip: (r) => [[String(r.year) + (r.ytd ? '(年初至今)' : ''), ''], ['价格回报', SP.spct(r.price_return)], ['含股息(估算)', SP.spct(r.total_return_est)], ['年内最大回撤', SP.spct(r.max_drawdown)], ['年末点位', SP.F.num2(r.close)]],
+  });
+});
+
+dash.draw('beartable', (tb) => SP.table(tb, 'bears', [
+  { field: 'peak_date', cls: 'l' }, { field: 'trough_date', cls: 'l' }, { field: 'depth', fmt: SP.F.spct, tone: true },
+  { field: 'months_down', fmt: SP.F.num1 }, { field: 'months_to_recover', fmt: SP.F.num1 },
+  { field: 'ret_12m_after_trough', fmt: SP.F.spct, tone: true }, { field: 'ret_12m_after_first_minus10', fmt: SP.F.spct, tone: true },
+  { field: 'cause', cls: 'w' },
+], ['peak_date'], { rows: (rs) => rs.slice().reverse() }));
+
+dash.draw('eventtable', (tb) => SP.table(tb, 'events', [
+  { field: 'event', cls: 'l' }, { field: 'n', fmt: SP.F.num0 }, { field: 'median_3m', fmt: SP.F.spct, tone: true },
+  { field: 'median_12m', fmt: SP.F.spct, tone: true }, { field: 'p_up_12m', fmt: (v) => SP.pct(v, 0) },
+  { field: 'p_further_10', fmt: (v) => SP.pct(v, 0) }, { field: 'worst_12m', fmt: SP.F.spct, tone: true },
+], ['event']));
+
+dash.draw('holdingtable', (tb) => SP.table(tb, 'holding', [
+  { field: 'years', cls: 'l', fmt: (v) => v + '年' }, { field: 'basis', cls: 'l muted' },
+  { field: 'p_loss', render: (td, r) => SP.cellBar(td, r.p_loss, 0.35, 'var(--color-bad)', (v) => SP.pct(v, 1)) },
+  { field: 'median_cagr', fmt: SP.F.spct }, { field: 'worst_cagr', fmt: SP.F.spct, tone: true }, { field: 'best_cagr', fmt: SP.F.spct, tone: true },
+], ['years', 'basis']));
+
+dash.draw('capebars', (el) => {
+  const d = dash.data('cape_buckets'), s = dash.data('stats');
+  if (d.status !== 'ok') { SP.placeholder(el, d); return; }
+  const now = s.status === 'ok' ? s.data[0].cape_cape_now : null;
+  const inB = (lab) => {
+    if (now === null) return false;
+    if (lab.startsWith('<')) return now < +lab.slice(1);
+    if (lab.startsWith('>')) return now > +lab.slice(1);
+    const [a, b] = lab.split('-').map(Number); return now >= a && now < b;
+  };
+  SP.hbars(el, d.data.map((r) => ({ label: 'CAPE ' + r.cape_range, value: r.median_10y, strong: inB(r.cape_range), dim: !inB(r.cape_range),
+    text: `${SP.pct(r.median_10y)}  (${SP.pct(r.worst_10y)} / ${SP.pct(r.best_10y)})`, color: SP.color(0) })), { min: 0 });
+});
+
+dash.draw('seasonchart', (el) => {
+  const d = dash.data('seasonality'), s = dash.data('signal');
+  if (d.status !== 'ok') { SP.placeholder(el, d); return; }
+  const cur = s.status === 'ok' ? +s.data[0].date.slice(5, 7) : 0;
+  const hot = (m) => m === cur || m === (cur % 12) + 1;
+  SP.vbars(el, {
+    rows: d.data, height: 170, top: 18, label: '1950年以来各月平均涨跌与上涨年份占比', x: (r) => String(r.month), xLabel: (r) => r.month + '月',
+    y: (r) => r.mean, yFmt: d3.format('.1%'), color: () => SP.color(0), dim: (r) => !hot(r.month),
+    barLabel: (r) => SP.pct(r.p_up, 0), labelEvery: (bw) => (bw < 22 ? 2 : 1),
+    tip: (r) => [[r.month + '月', ''], ['平均', SP.spct(r.mean)], ['中位数', SP.spct(r.median)], ['上涨年份占比', SP.pct(r.p_up, 0)], ['样本年数', String(r.n)]],
+  });
+});
+
+dash.draw('cyclebars', (el) => {
+  const d = dash.data('cycle'), s = dash.data('signal');
+  if (d.status !== 'ok') { SP.placeholder(el, d); return; }
+  const next = s.status === 'ok' ? (+s.data[0].date.slice(0, 4) + 1) % 4 : -1;
+  SP.hbars(el, d.data.map((r) => ({ label: r.name, value: r.mean, text: `${SP.spct(r.mean)} · 上涨${SP.pct(r.p_up, 0)}`, color: SP.color(0),
+    strong: r.phase === next, dim: r.phase !== next })), { min: 0 });
+});
+
+// ---------- model card ----------
+dash.draw('modeltable', (tb) => SP.table(tb, 'model_card', [
+  { field: 'label', cls: 'l' }, { field: 'definition', cls: 'w muted' }, { field: 'auc', fmt: SP.F.num2 },
+  { field: 'brier_skill', fmt: (v) => SP.spct(v, 1), tone: true },
+  { field: 'auc_1960_1989', fmt: SP.F.num2 }, { field: 'auc_1990_2007', fmt: SP.F.num2 }, { field: 'auc_2008_2026', fmt: SP.F.num2 },
+  { field: 'realized_rate', fmt: SP.F.pct },
+  { field: 'verdict', render: (td, r) => { td.textContent = r.verdict; td.className = 'l ' + (r.verdict === '有效' ? 'pos' : r.verdict === '较弱' ? 'warn' : 'muted'); } },
+], ['key']));
+</script>
